@@ -1,0 +1,41 @@
+name: Update my903 RSS feed
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-feed:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Run tests
+        run: node --test ./test-my903-rss-generator.mjs
+
+      - name: Generate RSS
+        run: node ./my903-rss-generator.mjs --limit 50 --output ./my903-rss.xml
+
+      - name: Commit updated feed
+        run: |
+          if git diff --quiet -- my903-rss.xml; then
+            echo "No feed changes."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add my903-rss.xml
+          git commit -m "Update my903 RSS feed"
+          git push
